@@ -1,0 +1,58 @@
+# Logging
+log syslog all;
+
+# Nimm die IP des interface als Router ID
+router id from "ffslfl-wg";
+
+# Beziehe regelmaessig Updates der lokalen Interfacekonfiguration
+protocol device {
+    scan time 10;
+}
+
+# Schreibe Routen in die FIB des Systems, beziehe von dort aber keine Updates
+protocol kernel {
+    ipv6 {
+        import none;
+        export all;
+    };
+}
+protocol kernel {
+    ipv4 {
+        import none;
+        export all;
+    };
+}
+
+# Statische Announcements der eigenen IPs
+protocol static {
+    ipv6;
+    route {{ internal_v6_net }}         blackhole;
+
+    route {{ internal_v6_net }}     via "ffslfl-wg";
+}
+
+protocol static {
+    ipv4;
+    route {{ internal_v4_net }}         blackhole;
+
+    route {{ internal_v4_net }}     via "ffslfl-wg";
+}
+
+# Konfiguration des Babel Protokolls
+protocol babel FFSLFLbabel {
+    # Interfaces auf denen babel gesprochen wird
+    # interface "eth0";
+    interface "ffslfl-wg" {
+        # rx-tx-Kosten dem Tunneltypen ggf. anpassen
+        rxcost 96;
+    };
+
+    ipv6 {
+        import all;
+        export all;
+    };
+    ipv4 {
+        import all;
+        export all;
+    };
+}

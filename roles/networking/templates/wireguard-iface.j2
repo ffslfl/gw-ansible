@@ -1,0 +1,23 @@
+auto ffslfl-wg
+iface ffslfl-wg inet6 static
+	address fe80::fffe/64
+
+	# initialize wireguard
+	pre-up ip link add $IFACE type wireguard
+	pre-up wg setconf $IFACE /etc/wireguard/$IFACE.conf
+	post-down ip link del $IFACE
+
+	# Enable Multicast for Babel
+	pre-up ip link set dev $IFACE multicast on
+
+	# iif rules
+	post-up ip -6 rule add iif $IFACE prio 200 table ffslfl
+	pre-down ip -6 rule add iif $IFACE prio 200 table ffslfl
+
+iface ffslfl-wg inet static
+	address {{ internal_v4 }}
+	scope link
+
+	# iif rules
+	post-up ip -4 rule add iif $IFACE prio 200 table ffslfl
+	pre-down ip -4 rule add iif $IFACE prio 200 table ffslfl

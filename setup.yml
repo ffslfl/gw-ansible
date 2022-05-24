@@ -1,0 +1,27 @@
+---
+- name: Setup noc
+  hosts: nocs
+  tasks:
+#    - name: Print all available facts
+#      ansible.builtin.debug:
+#        var: ansible_facts
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+      when: ansible_facts['distribution'] == "Debian"
+      become: yes
+    - name: Update all packages to their latest version
+      apt:
+        name: "*"
+        state: latest
+      when: ansible_facts['distribution'] == "Debian"
+      become: yes
+    - name: Install wireguard
+      apt:
+        name: "wireguard"
+        state: latest
+      when: ansible_facts['distribution'] == "Debian"
+      become: yes
+    - name: Setup ff networking
+      include_role:
+        name: networking

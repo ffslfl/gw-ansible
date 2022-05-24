@@ -1,0 +1,79 @@
+---
+
+- ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+  become: yes
+- ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    state: present
+  become: yes
+- ansible.posix.sysctl:
+    name: net.ipv4.icmp_errors_use_inbound_ifaddr
+    value: '1'
+    state: present
+  become: yes
+- name: Add routing table
+  lineinfile:
+    path: /etc/iproute2/rt_tables
+    line: "10 ffslfl"
+  become: yes
+- name: Setup lo interface
+  template:
+    src: lo.j2
+    dest: "/etc/network/interfaces.d/lo"
+  become: yes
+- name: Restarting lo Network Interface
+  command: bash -c "ifdown lo && ifup lo"
+  become: true
+- name: Setup wireguard interface
+  template:
+    src: wireguard-iface.j2
+    dest: "/etc/network/interfaces.d/ffslfl-wg"
+  become: true
+- name: Create wireguard directory
+  file:
+    path: /etc/wireguard
+    state: directory
+  become: true
+- name: Setup wireguard
+  template:
+    src: ffslfl-wg.conf.j2
+    dest: "/etc/wireguard/ffslfl-wg.conf"
+    mode: "go-rwx"
+  become: true
+- name: Install wireguard
+  apt:
+    name: "wireguard"
+    state: latest
+  become: true
+  when: ansible_facts['distribution'] == "Debian"
+- name: Restarting ffslfl-wg Network Interface
+  command: bash -c "ifup ffslfl-wg"
+  become: true
+- name: Add backports for bird2
+  ansible.builtin.apt_repository:
+    repo: "deb http://deb.debian.org/debian bullseye-backports main"
+    state: present
+  when: ansible_facts['distribution'] == "Debian"
+  become: true
+- name: Update the repository cache and update package "bird2" to latest version using default release bullseye-backport
+  apt:
+    name: bird2
+    state: latest
+    default_release: bullseye-backports
+    update_cache: yes
+  when: ansible_facts['distribution'] == "Debian"
+  become: yes
+- name: Setup bird
+  template:
+    src: bird.conf.j2
+    dest: "/etc/bird/bird.conf"
+  become: true
+- name: Restart bird
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: bird

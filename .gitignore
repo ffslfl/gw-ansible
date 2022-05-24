@@ -1,0 +1,5 @@
+wg-private.key
+wg-public.key
+wg-private-peer.key
+wg-public-peer.key
+.vagrant/
